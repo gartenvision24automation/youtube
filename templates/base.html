@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}GartenVision24 Automation{% endblock %}</title>
+  <style>
+    :root {
+      --green: #2f7d4f;
+      --green-dark: #1f5c38;
+      --border: #d9dee2;
+      --text: #1a1a1a;
+      --muted: #6b7280;
+      --bg: #ffffff;
+    }
+    * { box-sizing: border-box; }
+    body {
+      font-family: -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+      color: var(--text);
+      background: var(--bg);
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 24px 32px 64px;
+    }
+    nav {
+      display: flex;
+      gap: 24px;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 12px;
+      margin-bottom: 24px;
+      font-size: 14px;
+    }
+    nav a {
+      text-decoration: none;
+      color: var(--muted);
+      font-weight: 500;
+    }
+    nav a.active {
+      color: var(--green-dark);
+      font-weight: 700;
+      border-bottom: 2px solid var(--green);
+      padding-bottom: 12px;
+      margin-bottom: -13px;
+    }
+    h1 { font-size: 22px; margin-bottom: 20px; }
+    label {
+      display: block;
+      font-weight: 600;
+      font-size: 14px;
+      margin: 18px 0 6px;
+    }
+    .hint {
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 4px;
+    }
+    input[type=text], input[type=number], input[type=url], select, textarea {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font-size: 14px;
+      font-family: inherit;
+    }
+    textarea { resize: vertical; }
+    .toggle-group { display: flex; gap: 10px; }
+    .toggle-btn {
+      flex: 1;
+      padding: 12px;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      background: #fff;
+      text-align: center;
+      font-weight: 600;
+      cursor: pointer;
+      font-size: 14px;
+    }
+    .toggle-btn.selected {
+      background: var(--green);
+      color: white;
+      border-color: var(--green);
+    }
+    button.primary {
+      margin-top: 28px;
+      background: var(--green);
+      color: white;
+      border: none;
+      padding: 12px 22px;
+      border-radius: 6px;
+      font-weight: 700;
+      font-size: 14px;
+      cursor: pointer;
+    }
+    button.primary:hover { background: var(--green-dark); }
+    .flash {
+      background: #e8f5ec;
+      border: 1px solid var(--green);
+      color: var(--green-dark);
+      padding: 10px 14px;
+      border-radius: 6px;
+      margin-bottom: 16px;
+      font-size: 14px;
+    }
+    table { width: 100%; border-collapse: collapse; font-size: 14px; }
+    th, td { text-align: left; padding: 10px 8px; border-bottom: 1px solid var(--border); }
+    .badge {
+      display: inline-block;
+      padding: 2px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+    .badge.active { background: #e8f5ec; color: var(--green-dark); }
+    .badge.paused { background: #fdf1e0; color: #92620a; }
+    .badge.done { background: #eee; color: #555; }
+    .btn-link {
+      font-size: 13px;
+      color: var(--green-dark);
+      cursor: pointer;
+      border: none;
+      background: none;
+      text-decoration: underline;
+      padding: 0;
+    }
+  </style>
+</head>
+<body>
+  <nav>
+    <a href="{{ url_for('single_post') }}" class="{{ 'active' if active_tab == 'post' }}">Einzelner Post</a>
+    <a href="{{ url_for('new_campaign') }}" class="{{ 'active' if active_tab == 'new_campaign' }}">Neue Kampagne</a>
+    <a href="{{ url_for('campaigns') }}" class="{{ 'active' if active_tab == 'campaigns' }}">Kampagnen</a>
+    <a href="{{ url_for('inbox') }}" class="{{ 'active' if active_tab == 'inbox' }}">Postfach</a>
+  </nav>
+
+  {% with messages = get_flashed_messages() %}
+    {% if messages %}
+      {% for m in messages %}<div class="flash">{{ m }}</div>{% endfor %}
+    {% endif %}
+  {% endwith %}
+
+  {% block content %}{% endblock %}
+</body>
+</html>
