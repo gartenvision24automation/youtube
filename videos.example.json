@@ -1,0 +1,18 @@
+[
+  {
+    "id": "video-001",
+    "url": "https://cloud-anbieter.tld/pfad/video1.mp4",
+    "title": "Mein Sommerurlaub",
+    "description": "Surfen in Santa Cruz",
+    "keywords": "surfen,santa cruz",
+    "category": "22",
+    "privacyStatus": "private",
+    "account": "kanal_a"
+  },
+  {
+    "id": "video-002",
+    "url": "https://cloud-anbieter.tld/pfad/video2.mp4",
+    "title": "Noch ein Video",
+    "account": "kanal_b"
+  }
+]

@@ -1,0 +1,51 @@
+name: YouTube Upload
+
+on:
+  schedule:
+    # Läuft jeden Tag um 08:00 UTC. Cron-Syntax anpassen nach Bedarf.
+    - cron: "0 8 * * *"
+  workflow_dispatch: {}  # erlaubt zusätzlich manuelles Auslösen im GitHub-UI
+
+# Damit der Workflow das aktualisierte uploaded.json zurückcommitten darf.
+permissions:
+  contents: write
+
+jobs:
+  upload:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Repository auschecken
+        uses: actions/checkout@v4
+
+      - name: Python einrichten
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Abhängigkeiten installieren
+        run: pip install google-api-python-client google-auth-oauthlib google-auth-httplib2 requests
+
+      - name: Zugangsdaten aus Secrets schreiben
+        run: |
+          mkdir -p tokens
+          echo "${{ secrets.YT_CLIENT_SECRETS_JSON }}" > client_secrets.json
+          echo "${{ secrets.YT_TOKEN_KANAL_A }}" > tokens/kanal_a.json
+          echo "${{ secrets.YT_TOKEN_KANAL_B }}" > tokens/kanal_b.json
+          # Für jeden weiteren Kanal eine weitere Zeile nach diesem Muster
+          # ergänzen: echo "${{ secrets.YT_TOKEN_<NAME> }}" > tokens/<name>.json
+
+      - name: Videos hochladen
+        run: python upload_video.py --manifest="videos.json"
+
+      - name: Aufräumen (Secrets nicht ins Repo committen)
+        if: always()
+        run: rm -f client_secrets.json && rm -rf tokens
+
+      - name: Status zurückcommitten
+        if: always()
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add uploaded.json
+          git diff --staged --quiet || git commit -m "Update uploaded.json [skip ci]"
+          git push
