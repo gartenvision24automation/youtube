@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+{% block title %}Neue Kampagne - GartenVision{% endblock %}
+{% block content %}
+<h1>Kampagne</h1>
+
+<form method="post" id="campaign-form">
+  <label>Kampagne</label>
+  <select name="existing_campaign_id" id="existing_campaign_id" onchange="toggleNewFields()">
+    <option value="">🔊 Neue Kampagne erstellen</option>
+    {% for c in existing_campaigns %}
+      <option value="{{ c.id }}">{{ c.name }}</option>
+    {% endfor %}
+  </select>
+  <p class="hint">Wähle eine bestehende aktive Kampagne, um Videos hinzuzufügen — so entstehen keine doppelten Kampagnen für dieselbe Kategorie/denselben Account.</p>
+
+  <div id="new-campaign-fields">
+    <label>Name der Kampagne</label>
+    <input type="text" name="name" placeholder="z.B. Pools Rotation">
+
+    <label>Ziel</label>
+    <div class="toggle-group">
+      <div class="toggle-btn selected" data-value="account" onclick="selectTarget('account')">Einzelner Account</div>
+      <div class="toggle-btn" data-value="category" onclick="selectTarget('category')">Ganze Kategorie</div>
+    </div>
+    <input type="hidden" name="target" id="target" value="account">
+
+    <div id="account-field">
+      <label>Account</label>
+      <select name="account_id">
+        {% for a in accounts %}
+          <option value="{{ a.id }}">{{ a.name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div id="category-field" style="display:none">
+      <label>Kategorie</label>
+      <select name="category">
+        {% for cat in categories %}
+          <option value="{{ cat }}">{{ cat }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <label>Intervall (Stunden)</label>
+    <input type="number" name="interval_hours" placeholder="z.B. 6" step="0.5" min="0.5">
+    <p class="hint">Alle X Stunden wird das nächste Video aus der Warteschlange gepostet.</p>
+  </div>
+
+  <label>Video-URLs (eine pro Zeile)</label>
+  <textarea name="video_urls" rows="5" placeholder="https://.../video1.mp4&#10;https://.../video2.mp4&#10;https://.../video3.mp4"></textarea>
+
+  <label>Caption (für diese Videos)</label>
+  <textarea name="caption" rows="3" placeholder="Beitragstext..."></textarea>
+
+  <button type="submit" class="primary">Kampagne speichern</button>
+</form>
+
+<script>
+function selectTarget(value) {
+  document.getElementById('target').value = value;
+  document.querySelectorAll('.toggle-btn').forEach(btn => {
+    btn.classList.toggle('selected', btn.dataset.value === value);
+  });
+  document.getElementById('account-field').style.display = value === 'account' ? 'block' : 'none';
+  document.getElementById('category-field').style.display = value === 'category' ? 'block' : 'none';
+}
+function toggleNewFields() {
+  const isExisting = document.getElementById('existing_campaign_id').value !== '';
+  document.getElementById('new-campaign-fields').style.display = isExisting ? 'none' : 'block';
+}
+</script>
+{% endblock %}

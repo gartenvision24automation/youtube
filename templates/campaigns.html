@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}Kampagnen - GartenVision{% endblock %}
+{% block content %}
+<h1>Kampagnen</h1>
+
+<table>
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Ziel</th>
+      <th>Intervall</th>
+      <th>Warteschlange</th>
+      <th>Status</th>
+      <th>Zuletzt gepostet</th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for c in campaigns %}
+    <tr>
+      <td>{{ c.name }}</td>
+      <td>{{ c.accounts.name if c.accounts else c.category }}</td>
+      <td>{{ c.interval_hours }}h</td>
+      <td>{{ c.queued_count }} Video(s)</td>
+      <td><span class="badge {{ c.status }}">{{ c.status }}</span></td>
+      <td>{{ c.last_posted_at or "–" }}</td>
+      <td>
+        {% if c.status == 'active' %}
+          <form method="post" action="{{ url_for('pause_campaign', campaign_id=c.id) }}" style="display:inline">
+            <button class="btn-link" type="submit">Pausieren</button>
+          </form>
+        {% elif c.status == 'paused' %}
+          <form method="post" action="{{ url_for('resume_campaign', campaign_id=c.id) }}" style="display:inline">
+            <button class="btn-link" type="submit">Fortsetzen</button>
+          </form>
+        {% endif %}
+      </td>
+    </tr>
+    {% else %}
+    <tr><td colspan="7">Noch keine Kampagnen angelegt.</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

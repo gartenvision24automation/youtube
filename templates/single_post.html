@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}Einzelner Post - GartenVision{% endblock %}
+{% block content %}
+<h1>Einzelner Post</h1>
+
+<form method="post" action="{{ url_for('single_post') }}">
+  <label>Account</label>
+  <select name="account_id">
+    {% for a in accounts %}
+      <option value="{{ a.id }}">{{ a.name }}</option>
+    {% endfor %}
+  </select>
+
+  <label>Video-URL</label>
+  <input type="url" name="video_url" placeholder="https://.../video.mp4">
+
+  <label>Titel</label>
+  <input type="text" name="title" placeholder="Titel des Videos">
+
+  <label>Caption</label>
+  <textarea name="caption" rows="3" placeholder="Beitragstext..."></textarea>
+
+  <button type="submit" class="primary">Jetzt posten</button>
+</form>
+<p class="hint">Postet sofort, ohne in die Warteschlange einer Kampagne einzureihen.</p>
+{% endblock %}

@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}Postfach - GartenVision{% endblock %}
+{% block content %}
+<h1>Postfach</h1>
+<p class="hint">Fehlgeschlagene Uploads landen hier zur manuellen Prüfung.</p>
+
+<table>
+  <thead>
+    <tr><th>Kampagne</th><th>Video-URL</th><th>Fehler</th><th>Zeitpunkt</th></tr>
+  </thead>
+  <tbody>
+    {% for v in failed_videos %}
+    <tr>
+      <td>{{ v.campaigns.name if v.campaigns else "–" }}</td>
+      <td style="max-width:280px; overflow:hidden; text-overflow:ellipsis;">{{ v.url }}</td>
+      <td>{{ v.error_message }}</td>
+      <td>{{ v.created_at }}</td>
+    </tr>
+    {% else %}
+    <tr><td colspan="4">Keine fehlgeschlagenen Uploads. 🎉</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endblock %}
