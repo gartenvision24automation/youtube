@@ -1,18 +1,28 @@
+import json
 import os
 from datetime import datetime, timezone
 
-from flask import Flask, render_template, request, redirect, url_for, flash
+from flask import Flask, render_template, request, redirect, url_for, flash, session
+from werkzeug.middleware.proxy_fix import ProxyFix
 from supabase import create_client
 from apscheduler.schedulers.background import BackgroundScheduler
+from google_auth_oauthlib.flow import Flow
 
 from poster import post_next_due_videos
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("FLASK_SECRET_KEY", "dev-secret-change-me")
+app.config["PREFERRED_URL_SCHEME"] = "https"
+# Render sitzt hinter einem Proxy; ohne das erkennt Flask HTTPS nicht korrekt,
+# was den OAuth-Redirect (unten) kaputt machen würde.
+app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
 
 SUPABASE_URL = os.environ["SUPABASE_URL"]
 SUPABASE_KEY = os.environ["SUPABASE_SERVICE_KEY"]
 supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
+
+YOUTUBE_UPLOAD_SCOPE = "https://www.googleapis.com/auth/youtube.upload"
+GOOGLE_CLIENT_SECRETS = os.environ.get("GOOGLE_CLIENT_SECRETS")
 
 
 # ---------- Navigation / Tabs ----------
@@ -138,6 +148,64 @@ def inbox():
         .data
     )
     return render_template("inbox.html", failed_videos=rows, active_tab="inbox")
+
+
+# ---------- YouTube-Login (einmalig pro Account, direkt im Browser) ----------
+
+@app.route("/oauth")
+def oauth_start_page():
+    """Einstiegsseite: Account-Namen eingeben, dann Google-Login starten."""
+    accounts = supabase.table("accounts").select("name,youtube_token_key").execute().data
+    return render_template("oauth_start.html", accounts=accounts, active_tab="oauth")
+
+
+@app.route("/oauth/start")
+def oauth_start():
+    if not GOOGLE_CLIENT_SECRETS:
+        return "Umgebungsvariable GOOGLE_CLIENT_SECRETS ist nicht gesetzt.", 500
+
+    account = request.args.get("account", "default").strip()
+    flow = Flow.from_client_config(
+        json.loads(GOOGLE_CLIENT_SECRETS),
+        scopes=[YOUTUBE_UPLOAD_SCOPE],
+        redirect_uri=url_for("oauth_callback", _external=True),
+    )
+    auth_url, state = flow.authorization_url(
+        access_type="offline",
+        prompt="consent",  # erzwingt, dass ein refresh_token mitgeliefert wird
+        include_granted_scopes="true",
+    )
+    session["oauth_state"] = state
+    session["oauth_account"] = account
+    return redirect(auth_url)
+
+
+@app.route("/oauth/callback")
+def oauth_callback():
+    if not GOOGLE_CLIENT_SECRETS:
+        return "Umgebungsvariable GOOGLE_CLIENT_SECRETS ist nicht gesetzt.", 500
+
+    state = session.get("oauth_state")
+    account = session.get("oauth_account", "default")
+
+    flow = Flow.from_client_config(
+        json.loads(GOOGLE_CLIENT_SECRETS),
+        scopes=[YOUTUBE_UPLOAD_SCOPE],
+        state=state,
+        redirect_uri=url_for("oauth_callback", _external=True),
+    )
+    flow.fetch_token(authorization_response=request.url)
+
+    token_json = flow.credentials.to_json()
+    env_name = f"YT_TOKEN_{account.upper().replace('-', '_')}"
+
+    return render_template(
+        "oauth_done.html",
+        token_json=token_json,
+        env_name=env_name,
+        account=account,
+        active_tab="oauth",
+    )
 
 
 # ---------- Hintergrund-Scheduler: postet fällige Videos ----------
