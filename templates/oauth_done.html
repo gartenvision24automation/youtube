@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}Login erfolgreich - GartenVision{% endblock %}
+{% block content %}
+<h1>✅ Login erfolgreich für "{{ account }}"</h1>
+
+<p class="hint">
+  Kopiere den Text unten komplett und lege ihn bei Render als
+  Environment-Variable an:
+</p>
+
+<label>Variablenname</label>
+<input type="text" readonly value="{{ env_name }}" onclick="this.select()">
+
+<label>Wert (kompletter Inhalt)</label>
+<textarea readonly rows="8" onclick="this.select()">{{ token_json }}</textarea>
+
+<p class="hint">
+  Danach bei Render: Environment → Add Environment Variable → Name
+  <code>{{ env_name }}</code>, Value = obiger Text einfügen → Save
+  (Render startet den Dienst danach automatisch neu).
+</p>
+
+<p class="hint">
+  ⚠️ Dieser Token gewährt Upload-Zugriff auf den YouTube-Kanal. Diese Seite
+  nicht mit anderen teilen und nach dem Kopieren am besten neu laden, damit
+  der Token nicht im Browser-Verlauf sichtbar bleibt.
+</p>
+{% endblock %}

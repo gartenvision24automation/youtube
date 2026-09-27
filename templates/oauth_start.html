@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}YouTube-Login - GartenVision{% endblock %}
+{% block content %}
+<h1>YouTube-Account verbinden</h1>
+<p class="hint">
+  Trage den Account-Namen ein (muss zum Feld <code>youtube_token_key</code>
+  des Accounts in Supabase passen), dann öffnet sich der Google-Login.
+  Nach dem Login zeigt dir die nächste Seite den Token, den du als
+  Environment-Variable bei Render hinterlegen musst.
+</p>
+
+<form method="get" action="{{ url_for('oauth_start') }}">
+  <label>Account-Name (= youtube_token_key)</label>
+  <input type="text" name="account" placeholder="z.B. gartenvision24" required>
+  <button type="submit" class="primary">Mit Google anmelden</button>
+</form>
+
+{% if accounts %}
+<h2 style="font-size:16px; margin-top:32px;">Bereits angelegte Accounts</h2>
+<table>
+  <thead><tr><th>Name</th><th>youtube_token_key</th></tr></thead>
+  <tbody>
+    {% for a in accounts %}
+    <tr><td>{{ a.name }}</td><td>{{ a.youtube_token_key or "–" }}</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endif %}
+{% endblock %}
