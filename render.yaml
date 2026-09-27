@@ -12,6 +12,8 @@ services:
         sync: false
       - key: FLASK_SECRET_KEY
         generateValue: true
+      - key: GOOGLE_CLIENT_SECRETS
+        sync: false
       # Für jeden Account eine eigene Zeile ergänzen, siehe README:
       # - key: YT_TOKEN_GARTENVISION24
       #   sync: false
