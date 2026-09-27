@@ -1,3 +1,4 @@
+[README.md](https://github.com/user-attachments/files/32700725/README.md)
 # GartenVision24 Automation
 
 Dashboard zum Anlegen von Video-Kampagnen (Warteschlange + Intervall-Posting) auf YouTube, Deployment auf Render, Datenhaltung in Supabase.
@@ -17,30 +18,49 @@ Dashboard zum Anlegen von Video-Kampagnen (Warteschlange + Intervall-Posting) au
    youtube_token_key: gartenvision24
    ```
 
-## 2. YouTube-Tokens erzeugen
+## 2. Google Cloud OAuth einrichten (Web statt Desktop!)
 
-Für jeden Account einmal **lokal** (nicht auf Render):
+Für den Login direkt im Dashboard (ohne lokales Python) brauchst du einen
+OAuth-Client vom Typ **"Web-Anwendung"**, nicht "Desktop-App":
 
-```
-pip install google-api-python-client google-auth-oauthlib google-auth-httplib2 requests
-python upload_video.py --account="gartenvision24" --file="test.mp4"
-```
-
-Der Wert bei `--account` muss zum `youtube_token_key` des Accounts in
-Supabase passen. Das erzeugt `tokens/gartenvision24.json` – dessen Inhalt
-brauchst du gleich als Environment-Variable.
+1. In der Google Cloud Console → APIs & Dienste → Anmeldedaten →
+   "OAuth-Client-ID erstellen" → Anwendungstyp **"Webanwendung"**.
+2. Bei "Autorisierte Redirect-URIs" eintragen:
+   `https://<dein-render-service>.onrender.com/oauth/callback`
+   (die genaue Render-URL bekommst du nach dem ersten Deploy in Schritt 3;
+   du kannst den OAuth-Client danach jederzeit bearbeiten und die URI
+   nachtragen).
+3. Die heruntergeladene JSON-Datei **nicht als Datei ablegen**, sondern
+   ihren kompletten Inhalt gleich als Environment-Variable
+   `GOOGLE_CLIENT_SECRETS` bei Render eintragen (Schritt 3).
 
 ## 3. Auf Render deployen
 
-1. Repo mit diesem Code auf GitHub pushen (Render kann direkt von dort deployen).
+1. Repo mit diesem Code auf GitHub pushen (bereits erledigt).
 2. Auf render.com: "New" → "Blueprint" → Repo auswählen (nutzt `render.yaml`).
 3. Environment-Variablen setzen:
    - `SUPABASE_URL`
    - `SUPABASE_SERVICE_KEY`
-   - Pro Account: `YT_TOKEN_<ACCOUNT_KEY_GROSSGESCHRIEBEN>` = kompletter Inhalt
-     der jeweiligen `tokens/<account>.json`
-     (z. B. `YT_TOKEN_GARTENVISION24`)
+   - `GOOGLE_CLIENT_SECRETS` (kompletter Inhalt der OAuth-Client-JSON aus Schritt 2)
 4. Deploy starten. Die App läuft dann unter `https://<dein-service>.onrender.com`.
+5. Falls in Schritt 2 die Redirect-URI noch fehlte: jetzt in der Google
+   Cloud Console beim OAuth-Client nachtragen:
+   `https://<dein-service>.onrender.com/oauth/callback`.
+
+## 4. YouTube-Accounts verbinden (direkt im Browser, kein lokales Python)
+
+1. In Supabase in der Tabelle `accounts` einen Account anlegen, z. B.
+   `name: gartenvision24.de`, `youtube_token_key: gartenvision24`.
+2. Im Dashboard oben rechts auf "🔑 YouTube-Login" klicken (oder direkt
+   `https://<dein-service>.onrender.com/oauth` öffnen).
+3. Account-Namen eingeben (muss exakt `youtube_token_key` entsprechen),
+   auf "Mit Google anmelden" klicken, im Google-Consent-Screen den
+   gewünschten Kanal auswählen und bestätigen.
+4. Die folgende Seite zeigt dir Variablenname (z. B. `YT_TOKEN_GARTENVISION24`)
+   und Wert zum Kopieren.
+5. Bei Render unter "Environment" diese Variable hinzufügen und speichern
+   (Render startet den Dienst danach automatisch neu).
+6. Für jeden weiteren Account Schritte 2–5 wiederholen.
 
 ## 4. Funktionsweise
 
