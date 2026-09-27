@@ -130,6 +130,7 @@
     <a href="{{ url_for('new_campaign') }}" class="{{ 'active' if active_tab == 'new_campaign' }}">Neue Kampagne</a>
     <a href="{{ url_for('campaigns') }}" class="{{ 'active' if active_tab == 'campaigns' }}">Kampagnen</a>
     <a href="{{ url_for('inbox') }}" class="{{ 'active' if active_tab == 'inbox' }}">Postfach</a>
+    <a href="{{ url_for('oauth_start_page') }}" class="{{ 'active' if active_tab == 'oauth' }}" style="margin-left:auto;">🔑 YouTube-Login</a>
   </nav>
 
   {% with messages = get_flashed_messages() %}
