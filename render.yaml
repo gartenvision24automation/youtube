@@ -2,7 +2,7 @@ services:
   - type: web
     name: gartenvision24-automation
     env: python
-    plan: starter
+    plan: free
     buildCommand: pip install -r requirements.txt
     startCommand: gunicorn app:app --bind 0.0.0.0:$PORT --timeout 120
     envVars:
