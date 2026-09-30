@@ -58,12 +58,33 @@ def post_next_due_videos(supabase):
         video = next_video_result.data[0]
         accounts = _resolve_accounts(supabase, campaign)
 
+        if not accounts:
+            # Kein Account gefunden (falsche/fehlende account_id oder Kategorie
+            # ohne zugeordnete Accounts) -> klar als Fehler markieren, statt
+            # fälschlicherweise "posted" zu setzen.
+            supabase.table("videos").update(
+                {
+                    "status": "failed",
+                    "error_message": (
+                        f"Kein passender Account gefunden (target_type="
+                        f"{campaign['target_type']}, account_id="
+                        f"{campaign.get('account_id')}, category="
+                        f"{campaign.get('category')})."
+                    ),
+                }
+            ).eq("id", video["id"]).execute()
+            continue
+
+        last_youtube_id = None
+        last_error = None
+        upload_succeeded = False
+
         for account in accounts:
             tmp_path = None
             try:
                 tmp_path = download_to_tempfile(video["url"])
                 youtube = get_authenticated_service(account["youtube_token_key"] or account["name"])
-                youtube_id = upload_file(
+                last_youtube_id = upload_file(
                     youtube,
                     tmp_path,
                     title=campaign["name"],
@@ -72,26 +93,33 @@ def post_next_due_videos(supabase):
                     category="22",
                     privacy_status="public",
                 )
-                posted_ids.append(youtube_id)
+                upload_succeeded = True
             except Exception as e:
-                supabase.table("videos").update(
-                    {"status": "failed", "error_message": str(e)}
-                ).eq("id", video["id"]).execute()
+                last_error = str(e)
                 continue
             finally:
                 if tmp_path and os.path.exists(tmp_path):
                     os.remove(tmp_path)
 
-        supabase.table("videos").update(
-            {
-                "status": "posted",
-                "posted_at": datetime.now(timezone.utc).isoformat(),
-                "youtube_video_id": posted_ids[-1] if posted_ids else None,
-            }
-        ).eq("id", video["id"]).execute()
-
-        supabase.table("campaigns").update(
-            {"last_posted_at": datetime.now(timezone.utc).isoformat()}
-        ).eq("id", campaign["id"]).execute()
+        if upload_succeeded:
+            supabase.table("videos").update(
+                {
+                    "status": "posted",
+                    "posted_at": datetime.now(timezone.utc).isoformat(),
+                    "youtube_video_id": last_youtube_id,
+                }
+            ).eq("id", video["id"]).execute()
+            supabase.table("campaigns").update(
+                {"last_posted_at": datetime.now(timezone.utc).isoformat()}
+            ).eq("id", campaign["id"]).execute()
+            posted_ids.append(last_youtube_id)
+        else:
+            # Upload bei ALLEN Accounts fehlgeschlagen -> als failed markieren.
+            # last_posted_at bewusst NICHT aktualisieren, damit die Kampagne
+            # beim nächsten Scheduler-Lauf erneut (mit demselben Video) fällig
+            # ist, statt das Video stillschweigend zu verlieren.
+            supabase.table("videos").update(
+                {"status": "failed", "error_message": last_error or "Unbekannter Fehler beim Upload."}
+            ).eq("id", video["id"]).execute()
 
     return posted_ids
