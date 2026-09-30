@@ -25,6 +25,15 @@ YOUTUBE_UPLOAD_SCOPE = "https://www.googleapis.com/auth/youtube.upload"
 GOOGLE_CLIENT_SECRETS = os.environ.get("GOOGLE_CLIENT_SECRETS")
 
 
+# ---------- Health-Check (für externen Pinger, z.B. cron-job.org) ----------
+
+@app.route("/health")
+def health():
+    """Leichte Route ohne Datenbank-Zugriff, damit ein externer Pinger die
+    Render Free-Instanz wachhält, ohne unnötig Supabase-Anfragen zu erzeugen."""
+    return {"status": "ok"}, 200
+
+
 # ---------- Navigation / Tabs ----------
 
 @app.route("/")
