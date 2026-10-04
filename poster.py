@@ -51,9 +51,29 @@ def post_next_due_videos(supabase):
             .execute()
         )
         if not next_video_result.data:
-            # Warteschlange leer -> Kampagne als erledigt markieren.
-            supabase.table("campaigns").update({"status": "done"}).eq("id", campaign["id"]).execute()
-            continue
+            # Warteschlange leer -> von vorne beginnen (Endlosschleife):
+            # alle Videos dieser Kampagne zurück auf 'queued' setzen, damit
+            # der nächste Durchlauf direkt wieder beim ersten Video startet.
+            supabase.table("videos").update(
+                {
+                    "status": "queued",
+                    "youtube_video_id": None,
+                    "posted_at": None,
+                    "error_message": None,
+                }
+            ).eq("campaign_id", campaign["id"]).neq("status", "queued").execute()
+
+            next_video_result = (
+                supabase.table("videos")
+                .select("*")
+                .eq("campaign_id", campaign["id"])
+                .order("position")
+                .limit(1)
+                .execute()
+            )
+            if not next_video_result.data:
+                # Kampagne hat tatsächlich gar keine Videos -> nichts zu tun.
+                continue
 
         video = next_video_result.data[0]
         accounts = _resolve_accounts(supabase, campaign)
