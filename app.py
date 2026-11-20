@@ -8,7 +8,8 @@ from supabase import create_client
 from apscheduler.schedulers.background import BackgroundScheduler
 from google_auth_oauthlib.flow import Flow
 
-from poster import post_next_due_videos
+from notifier import send_alert
+from poster import post_next_due_videos, check_overdue_campaigns
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("FLASK_SECRET_KEY", "dev-secret-change-me")
@@ -32,6 +33,25 @@ def health():
     """Leichte Route ohne Datenbank-Zugriff, damit ein externer Pinger die
     Render Free-Instanz wachhält, ohne unnötig Supabase-Anfragen zu erzeugen."""
     return {"status": "ok"}, 200
+
+
+@app.route("/test-alert")
+def test_alert():
+    """Schickt eine Test-Mail, um die E-Mail-Einrichtung zu prüfen."""
+    sent = send_alert(
+        "test",
+        "Test-Benachrichtigung",
+        "Wenn du diese Mail liest, funktioniert die Benachrichtigung.",
+        cooldown_hours=1 / 12,  # max. alle 5 Minuten
+    )
+    if sent:
+        return "Test-Mail gesendet.", 200
+    return (
+        "Keine Mail gesendet (RESEND_API_KEY/ALERT_EMAIL_TO fehlen, Resend hat "
+        "abgelehnt oder die letzte Test-Mail ist weniger als 5 Minuten her). "
+        "Details stehen in den Render-Logs.",
+        200,
+    )
 
 
 # ---------- Navigation / Tabs ----------
@@ -221,9 +241,19 @@ def oauth_callback():
 
 def run_scheduler_job():
     with app.app_context():
-        posted = post_next_due_videos(supabase)
-        if posted:
-            print(f"[scheduler] {len(posted)} Video(s) gepostet: {posted}")
+        try:
+            posted = post_next_due_videos(supabase)
+            if posted:
+                print(f"[scheduler] {len(posted)} Video(s) gepostet: {posted}")
+            check_overdue_campaigns(supabase)
+        except Exception as e:
+            # Unerwarteter Fehler im Scheduler selbst (z.B. Supabase nicht erreichbar).
+            print(f"[scheduler] Fehler: {e}")
+            send_alert(
+                "scheduler-crash",
+                "Scheduler-Fehler",
+                f"Im Hintergrund-Scheduler ist ein unerwarteter Fehler aufgetreten:\n{e}",
+            )
 
 
 scheduler = BackgroundScheduler()
